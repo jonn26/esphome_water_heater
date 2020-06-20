@@ -40,7 +40,7 @@ sensor:
     update_interval: 30s
     battery_level:
       name: "$upper_devicename Battery Level"
-      id: battery_level
+      id: batt
 
   - platform: dallas
     address: 0xA5800000277E7928
@@ -102,7 +102,15 @@ display:
       }
 
       // Print time in HH:MM:SS AM/PM format
-      it.strftime(80, 64, id(font2), ST77XX_WHITE, TextAlign::TOP_CENTER, "%I:%M:%S %p", id(sntp_time).now());
+      it.strftime(10, 64, id(font2), ST77XX_WHITE, TextAlign::LEFT, "%I:%M:%S %p", id(sntp_time).now());
+
+      if (id(batt).has_state()) {
+        char batt_str[128];
+        sprintf(batt_str, "Bat: %.0f%%", id(batt).state);
+        it.print(150, 64, id(font2), ST77XX_RED, TextAlign::RIGHT, batt_str);
+      } else {
+        it.print(150, 64, id(font2), ST77XX_RED, TextAlign::RIGHT, "Unk");
+      }
 
 time:
   - platform: homeassistant
