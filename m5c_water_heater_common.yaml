@@ -1,0 +1,111 @@
+esphome:
+  name: $devicename
+  platform: ESP32
+  board: m5stick-c
+  platformio_options:
+    #upload_speed: 115200
+    upload_speed: 1500000
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_pw
+  domain: .jonn26.lan
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret esphome_rest_pw
+
+ota:
+  password: !secret esphome_ota_pw
+
+i2c:
+#apx192
+   - id: bus_a
+     sda: GPIO21
+     scl: GPIO22
+     scan: True
+
+binary_sensor:
+  - platform: status
+    name: $upper_devicename Status
+
+sensor:
+# AXP192 power management - must be present to initialize TFT power on
+  - platform: axp192
+    address: 0x34
+    i2c_id: bus_a
+    update_interval: 30s
+    battery_level:
+      name: "$upper_devicename Battery Level"
+      id: battery_level
+
+  - platform: dallas
+    address: 0xA5800000277E7928
+    name: "$upper_devicename Temp #1"
+    id: temp1
+  - platform: dallas
+    address: 0x2A8000002788CF28
+    name: "$upper_devicename Temp #2"
+    id: temp2
+  - platform: uptime
+    name: "$upper_devicename Uptime"
+
+dallas:
+  - pin: GPIO32
+
+spi:
+  clk_pin: GPIO13
+  mosi_pin: GPIO15
+
+font:
+  - file: 'arial.ttf'
+    id: font1
+    size: 10
+
+  - file: 'arial.ttf'
+    id: font2
+    size: 12
+
+  - file: 'arial.ttf'
+    id: font3
+    size: 18
+
+# builtin 80x160 TFT
+display:
+  - platform: st7735
+    cs_pin: GPIO5
+    dc_pin: GPIO23
+    reset_pin: GPIO18
+    rotation: 270
+    lambda: |-
+      it.print(80, 0, id(font1), ST77XX_WHITE, TextAlign::TOP_CENTER, "Water Heater Temp");
+
+      it.print(10, 16, id(font3), ST77XX_WHITE, TextAlign::LEFT, "Temp 1: ");
+      if (id(temp1).has_state()) {
+        char temp1_str[128];
+        sprintf(temp1_str, "%.0f°F", id(temp1).state * (9.0/5.0) + 32.0);
+        it.print(150, 16, id(font3), ST77XX_RED, TextAlign::RIGHT, temp1_str);
+      } else {
+        it.print(150, 16, id(font3), ST77XX_RED, TextAlign::RIGHT, "Unk");
+      }
+
+      it.print(10, 40, id(font3), ST77XX_WHITE, TextAlign::LEFT, "Temp 2: ");
+      if (id(temp2).has_state()) {
+        char temp2_str[128];
+        sprintf(temp2_str, "%.0f°F", id(temp2).state * (9.0/5.0) + 32.0);
+        it.print(150, 40, id(font3), ST77XX_RED, TextAlign::RIGHT, temp2_str);
+      } else {
+        it.print(150, 40, id(font3), ST77XX_RED, TextAlign::RIGHT, "Unk");
+      }
+
+      // Print time in HH:MM:SS AM/PM format
+      it.strftime(80, 64, id(font2), ST77XX_WHITE, TextAlign::TOP_CENTER, "%I:%M:%S %p", id(sntp_time).now());
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+  - platform: sntp
+    id: sntp_time
