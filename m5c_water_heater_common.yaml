@@ -21,6 +21,11 @@ api:
 ota:
   password: !secret esphome_ota_pw
 
+status_led:
+  pin:
+    number: GPIO10
+    inverted: True
+
 i2c:
 #apx192
    - id: bus_a
