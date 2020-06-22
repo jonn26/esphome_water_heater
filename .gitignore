@@ -8,5 +8,4 @@
 **/src/
 **/platformio.ini
 /secrets.yaml
-.DS_Store
 **/partitions.csv
